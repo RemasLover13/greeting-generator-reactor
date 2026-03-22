@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { OccasionType, ToneType } from "./types";  
 import type { LanguageType } from "./types";      
 import { LANGUAGES } from "./constants";
@@ -219,7 +219,7 @@ function App() {
                         className="rounded-lg shadow-lg max-w-full h-auto cursor-pointer"
                         style={{ maxHeight: "512px" }}
                         onLoad={() => console.log("Image loaded successfully")}
-                        onError={(e) => {
+                        onError={() => {
                           console.error("Failed to load image");
                           setImageLoadError(true);
                         }}
