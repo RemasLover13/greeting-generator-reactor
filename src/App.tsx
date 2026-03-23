@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { OccasionType, ToneType } from "./types";  
+import { OccasionType, ToneType, ImageStyle } from "./types";  
 import type { LanguageType } from "./types";      
 import { LANGUAGES } from "./constants";
 import { generateGreeting } from "./services/geminiService";
@@ -11,12 +11,12 @@ function App() {
   const [age, setAge] = useState<string>("");
   const [interests, setInterests] = useState<string>("");
   const [tone, setTone] = useState<ToneType>(ToneType.FRIENDLY);
+  const [imageStyle, setImageStyle] = useState<ImageStyle>(ImageStyle.DIGITAL_ART); 
   const [language, setLanguage] = useState<LanguageType>("Русский");
   const [greeting, setGreeting] = useState<string>("");  
   const [greetingImage, setGreetingImage] = useState<GeneratedImage | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);  
   const [isGeneratingImage, setIsGeneratingImage] = useState<boolean>(false);
-  const [imageLoadError, setImageLoadError] = useState<boolean>(false);
 
   const handleGenerate = async (): Promise<void> => {
     if (!name.trim()) {
@@ -27,7 +27,6 @@ function App() {
     setIsLoading(true);  
     setGreeting("");
     setGreetingImage(null);
-    setImageLoadError(false);
 
     try {
       const result = await generateGreeting(
@@ -42,16 +41,16 @@ function App() {
       
       setIsGeneratingImage(true);
       
-      const image = await generateGreetingImage(occasion, name, interests, tone);
+      const image = await generateGreetingImage(
+        occasion, 
+        name, 
+        interests, 
+        tone,
+        imageStyle  
+      );
       
       if (image) {
         setGreetingImage(image);
-        const img = new Image();
-        img.onload = () => setImageLoadError(false);
-        img.onerror = () => setImageLoadError(true);
-        img.src = image.url;
-      } else {
-        setImageLoadError(true);
       }
       
     } catch (error) {
@@ -151,6 +150,34 @@ function App() {
           </div>
           
           <div className="mb-6">
+            <label className="block text-gray-700 font-semibold mb-2">🎨 Стиль изображения:</label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {Object.values(ImageStyle).map((style) => (
+                <button
+                  key={style}
+                  onClick={() => setImageStyle(style)}
+                  className={`px-3 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
+                    imageStyle === style
+                      ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300 ring-offset-2'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
+                  }`}
+                >
+                  {style === ImageStyle.REALISTIC && "📸 "}
+                  {style === ImageStyle.ANIME && "🎌 "}
+                  {style === ImageStyle.CARTOON && "🎬 "}
+                  {style === ImageStyle.WATERCOLOR && "🎨 "}
+                  {style === ImageStyle.OIL_PAINTING && "🖼️ "}
+                  {style === ImageStyle.DIGITAL_ART && "💻 "}
+                  {style === ImageStyle.PIXEL_ART && "👾 "}
+                  {style === ImageStyle.MINIMALIST && "⬜ "}
+                  {style}
+                  {imageStyle === style && " ✓"}
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          <div className="mb-6">
             <label className="block text-gray-700 font-semibold mb-2">🌍 Язык поздравления:</label>
             <select 
               value={language} 
@@ -197,7 +224,6 @@ function App() {
                   <div className="animate-pulse">
                     <div className="text-4xl mb-2">🎨</div>
                     <p className="text-gray-500">Генерация изображения...</p>
-                    <p className="text-xs text-gray-400 mt-2">Это может занять до 15 секунд</p>
                   </div>
                 </div>
               )}
@@ -206,34 +232,20 @@ function App() {
                 <div className="p-6 bg-white rounded-xl shadow-xl border border-gray-200 animate-fadeIn">
                   <h3 className="text-xl font-bold mb-3 text-center text-purple-600">🖼️ Изображение к поздравлению:</h3>
                   <div className="flex justify-center">
-                    {imageLoadError ? (
-                      <div className="text-center p-8 bg-gray-100 rounded-lg">
-                        <div className="text-4xl mb-2">🖼️</div>
-                        <p className="text-gray-500">Не удалось загрузить изображение</p>
-                        <p className="text-xs text-gray-400 mt-2">Попробуйте сгенерировать снова</p>
-                      </div>
-                    ) : (
-                      <img 
-                        src={greetingImage.url} 
-                        alt="Generated greeting card"
-                        className="rounded-lg shadow-lg max-w-full h-auto cursor-pointer"
-                        style={{ maxHeight: "512px" }}
-                        onLoad={() => console.log("Image loaded successfully")}
-                        onError={() => {
-                          console.error("Failed to load image");
-                          setImageLoadError(true);
-                        }}
-                        onClick={() => window.open(greetingImage.url, '_blank')}
-                      />
-                    )}
+                    <img 
+                      src={greetingImage.dataUrl || greetingImage.url} 
+                      alt="Generated greeting card"
+                      className="rounded-lg shadow-lg max-w-full h-auto"
+                      style={{ maxHeight: "512px" }}
+                      onLoad={() => console.log("Image loaded successfully")}
+                      onError={(e) => {
+                        console.error("Failed to load image");
+                        e.currentTarget.src = "https://placehold.co/1024x1024/FFD700/FFFFFF?text=🎨+Image+Generation+Failed";
+                      }}
+                    />
                   </div>
                   <p className="text-xs text-gray-400 text-center mt-3">
-                    Сгенерировано с помощью: {greetingImage.model}
-                    {greetingImage.prompt && (
-                      <span className="block mt-1 opacity-50">
-                        Промпт: {greetingImage.prompt.substring(0, 100)}...
-                      </span>
-                    )}
+                    Стиль: {imageStyle} | Модель: {greetingImage.model}
                   </p>
                 </div>
               )}
